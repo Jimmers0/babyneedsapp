@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView.Adapter;
 import com.example.babyneeds.R;
 import com.example.babyneeds.data.DatabaseHandler;
 import com.example.babyneeds.model.Item;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.text.MessageFormat;
 import java.util.List;
@@ -39,7 +40,7 @@ public class RecyclerViewAdapter extends Adapter<RecyclerViewAdapter.ViewHolder>
 
     @NonNull
     @Override
-    public RecyclerViewAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int viewType) {
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int viewType) {
 
         View view = LayoutInflater.from(viewGroup.getContext())
                 .inflate(R.layout.list_row, viewGroup, false);
@@ -51,7 +52,7 @@ public class RecyclerViewAdapter extends Adapter<RecyclerViewAdapter.ViewHolder>
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerViewAdapter.ViewHolder viewHolder, int position) {
+    public void onBindViewHolder(@NonNull ViewHolder viewHolder, int position) {
         Item item = itemList.get(position); //object item
 
         viewHolder.itemName.setText(MessageFormat.format("Item: {0}", item.getItemName()));
@@ -66,6 +67,8 @@ public class RecyclerViewAdapter extends Adapter<RecyclerViewAdapter.ViewHolder>
     public int getItemCount() {
         return itemList.size();
     }
+
+
 
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         public TextView itemName;
@@ -101,17 +104,18 @@ public class RecyclerViewAdapter extends Adapter<RecyclerViewAdapter.ViewHolder>
         @Override
         public void onClick(View v) {
 
-            int position = getAdapterPosition();
+            int position;
+            position = getAdapterPosition();
+            Item item = itemList.get(position);
 
             switch (v.getId()) {
                 case R.id.edit_button:
                     //edit item
-                    editItem();
+
+                    editItem(item);
                     break;
                 case R.id.deleteButton:
                     //delete item
-                    position = getAdapterPosition();
-                    Item item = itemList.get(position);
 
                     deleteItem(item.getId());
                     break;
@@ -160,20 +164,21 @@ public class RecyclerViewAdapter extends Adapter<RecyclerViewAdapter.ViewHolder>
         }
     }
 
-    private void editItem() {
-        Item item = itemList.get(getAdapterPosition());
 
 
+
+
+    private void editItem(final Item newItem) {
 
         builder = new AlertDialog.Builder(context);
         inflater = LayoutInflater.from(context);
-        View view = inflater.inflate(R.layout. popup, null);
+        final View view = inflater.inflate(R.layout. popup, null);
 
         Button saveButton;
-        EditText babyItem;
-        EditText itemQuantity;
-        EditText itemColor;
-        EditText itemSize;
+        final EditText babyItem;
+        final EditText itemQuantity;
+        final EditText itemColor;
+        final EditText itemSize;
         TextView title;
 
         babyItem = view.findViewById(R.id.babyItem);
@@ -184,27 +189,61 @@ public class RecyclerViewAdapter extends Adapter<RecyclerViewAdapter.ViewHolder>
         title = view.findViewById(R.id.title);
 
         title.setText(R.string.edit_item);
-        babyItem.setText(item.getItemName());
-        itemQuantity.setText(String.valueOf(item.getItemQuantity()));
-        itemColor.setText(item.getItemColor());
-        itemSize.setText(String.valueOf(item.getItemSize()));
+        babyItem.setText(newItem.getItemName());
+        itemQuantity.setText(String.valueOf(newItem.getItemQuantity()));
+        itemColor.setText(newItem.getItemColor());
+        itemSize.setText(String.valueOf(newItem.getItemSize()));
 
         builder.setView(view);
         dialog = builder.create();
 
         dialog.show();
 
-
         saveButton.setOnClickListener(new View.OnClickListener() {
+
+
             @Override
             public void onClick(View v) {
 
+
+                DatabaseHandler databaseHandler = new DatabaseHandler(context);
+
+                //update items
+                newItem.setItemName(babyItem.getText().toString());
+                newItem.setItemColor(itemColor.getText().toString());
+                newItem.setItemQuantity(Integer.parseInt(itemQuantity.getText().toString()));
+                newItem.setItemSize(Integer.parseInt(itemSize.getText().toString()));
+
+                if (!babyItem.getText().toString().isEmpty()
+                        && !itemColor.getText().toString().isEmpty()
+                        && !itemQuantity.getText().toString().isEmpty()
+                        && !itemSize.getText().toString().isEmpty()) {
+
+
+
+
+                    databaseHandler.updateItem(newItem);
+                    //notifyItemChanged(getAdapterPosition(), newItem); //important!
+
+                } else {
+                    Snackbar.make(view, "Fields Empty",
+                            Snackbar.LENGTH_SHORT)
+                            .show();
+                }
+
+                dialog.dismiss();
+
+
             }
+
+
         });
 
 
 
     }
+
+
 
 
 }
